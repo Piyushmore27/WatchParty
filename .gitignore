@@ -1,5 +1,30 @@
+
+# Dependencies
 node_modules/
-dist/
+**/node_modules/
+
+# Environment variables and secrets
 .env
 .env.*
 !.env.example
+
+# Build files
+dist/
+**/dist/
+build/
+**/build/
+
+# Logs and caches
+*.log
+npm-debug.log*
+coverage/
+.vite/
+.cache/
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# IDE files
+.idea/
