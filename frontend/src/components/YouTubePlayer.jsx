@@ -190,7 +190,7 @@ const YouTubePlayer = forwardRef(function YouTubePlayer(
             </div>
 
             {playerError && (
-                <p style={{ color: "red" }}>{playerError}</p>
+                <p className="text-sm text-red-700">{playerError}</p>
             )}
 
         </div>

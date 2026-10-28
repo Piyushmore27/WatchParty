@@ -841,10 +841,10 @@ export default function RoomPage() {
 
     if (meetingEnded) {
         return (
-            <main className="flex h-dvh items-center justify-center bg-slate-950 px-4 text-white">
-                <section className="w-full max-w-md rounded-xl border border-slate-800 bg-slate-900 p-6 text-center">
+            <main className="flex h-dvh items-center justify-center bg-[#DEDEDE] px-4 text-[#1F2937]">
+                <section className="w-full max-w-md rounded-xl border border-[#D1D5DB] bg-white p-6 text-center shadow-sm">
                     <h1 className="text-xl font-semibold">Meeting ended</h1>
-                    <p className="mt-3 text-sm leading-6 text-neutral-300" role="status">
+                    <p className="mt-3 text-sm leading-6 text-[#4B5563]" role="status">
                         {error || "The Host has ended this meeting. Returning home…"}
                     </p>
                 </section>
@@ -854,17 +854,17 @@ export default function RoomPage() {
 
     if (!userId && (pendingRequestId || joinRequestStatus === "rejected")) {
         return (
-            <main className="flex h-dvh items-center justify-center bg-slate-950 px-4 text-white">
-                <section className="w-full max-w-md rounded-xl border border-slate-800 bg-slate-900 p-6 text-center">
+            <main className="flex h-dvh items-center justify-center bg-[#DEDEDE] px-4 text-[#1F2937]">
+                <section className="w-full max-w-md rounded-xl border border-[#D1D5DB] bg-white p-6 text-center shadow-sm">
                     <h1 className="text-xl font-semibold">
                         {joinRequestStatus === "rejected" ? "Request not approved" : "Waiting to join"}
                     </h1>
-                    <p className="mt-3 text-sm leading-6 text-neutral-300" role="status">
+                    <p className="mt-3 text-sm leading-6 text-[#4B5563]" role="status">
                         {joinRequestStatus === "rejected"
                             ? "The Host or Moderator rejected your request. You can submit a new request from the home page."
                             : "Waiting for the Host or Moderator to approve your request."}
                     </p>
-                    {error && <p className="mt-3 text-sm text-red-200" role="alert">{error}</p>}
+                    {error && <p className="mt-3 text-sm text-red-700" role="alert">{error}</p>}
                     <Button
                         variant="primary"
                         size="md"
@@ -873,7 +873,7 @@ export default function RoomPage() {
                             socket.disconnect();
                             navigate("/");
                         }}
-                        className="mt-5 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium hover:bg-blue-500"
+                        className="mt-5 rounded-lg bg-[#003399] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#002570]"
                     >
                         Return home
                     </Button>
@@ -883,15 +883,15 @@ export default function RoomPage() {
     }
 
     return (
-        <main className="flex min-h-dvh flex-col bg-slate-950 text-white lg:h-dvh lg:overflow-hidden">
-            <header className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-slate-800 px-4 py-3 sm:gap-4 sm:px-8">
+        <main className="flex min-h-dvh flex-col bg-[#DEDEDE] text-[#1F2937] lg:h-dvh lg:overflow-hidden">
+            <header className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-[#D1D5DB] px-4 py-3 sm:gap-4 sm:px-8">
                 <div>
                     <h1 className="text-lg font-semibold">Watch party</h1>
-                    <p className="mt-0.5 text-xs text-neutral-300 sm:text-sm">
-                        Room code: <span className="font-medium tracking-wider text-neutral-100">{roomCode}</span>
+                    <p className="mt-0.5 text-xs text-[#4B5563] sm:text-sm">
+                        Room code: <span className="font-medium tracking-wider text-[#1F2937]">{roomCode}</span>
                     </p>
                 </div>
-                <div className="flex items-center gap-2 text-xs text-neutral-300 sm:text-sm" role="status">
+                <div className="flex items-center gap-2 text-xs text-[#4B5563] sm:text-sm" role="status">
                     <span className={`h-2 w-2 rounded-full ${status === "Connected to watch party!" ? "bg-green-400" : "bg-amber-400"}`} />
                     {status}
                 </div>
@@ -900,7 +900,7 @@ export default function RoomPage() {
             <div className="mx-auto grid w-full max-w-[1500px] flex-1 grid-cols-1 gap-3 overflow-visible p-3 sm:gap-5 sm:p-6 lg:min-h-0 lg:grid-cols-[minmax(0,1fr)_320px] lg:grid-rows-1 lg:overflow-hidden lg:p-8">
                 <section className="flex min-h-0 min-w-0 flex-col">
                     <div
-                        className="relative mx-auto w-full shrink-0 overflow-hidden rounded-xl bg-slate-900 lg:mx-0"
+                        className="relative mx-auto w-full shrink-0 overflow-hidden rounded-xl bg-white lg:mx-0"
                         style={{ maxWidth: "min(100%, calc(42dvh * 16 / 9))" }}
                     >
                         {isValidVideoId(room?.video?.videoId) ? (
@@ -931,14 +931,14 @@ export default function RoomPage() {
                             </>
                         ) : (
                             <div className="grid aspect-video w-full place-items-center px-6 text-center">
-                                <p className="max-w-sm text-sm leading-6 text-neutral-300 sm:text-base">
+                                <p className="max-w-sm text-sm leading-6 text-[#4B5563] sm:text-base">
                                     No video selected. The Host can paste a YouTube link to start watching.
                                 </p>
                             </div>
                         )}
                     </div>
 
-                    <div className="mt-2 shrink-0 rounded-xl  border border-slate-800 bg-slate-900  p-3 sm:mt-4 sm:p-5">
+                    <div className="mt-2 shrink-0 rounded-xl border border-[#D1D5DB] bg-white p-3 shadow-sm sm:mt-4 sm:p-5">
                         <div className="flex items-center gap-4">
                             <Button
                                 variant="primary"
@@ -946,7 +946,7 @@ export default function RoomPage() {
                                 type="button"
                                 onClick={isPlaying ? handlePause : handlePlay}
                                 aria-label={isPlaying ? "Pause video" : "Play video"}
-                                className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-blue-600 text-lg text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50 sm:h-11 sm:w-11"
+                                className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#003399] text-lg text-white transition hover:bg-[#002570] disabled:cursor-not-allowed disabled:bg-[#9CA3AF] disabled:opacity-100 sm:h-11 sm:w-11"
                                 disabled={!isValidVideoId(room?.video?.videoId) || !canControlVideo || !playerReady || status !== "Connected to watch party!"}
                                 title={canControlVideo ? undefined : "Only the host or a moderator can control the video"}
                             >
@@ -974,9 +974,9 @@ export default function RoomPage() {
                                         }
                                     }}
                                     disabled={!duration || !canControlVideo || !playerReady}
-                                    className="w-full cursor-pointer accent-blue-400 disabled:cursor-not-allowed"
+                                    className="w-full cursor-pointer accent-[#003399] disabled:cursor-not-allowed"
                                 />
-                                <div className="mt-1 flex justify-between text-xs tabular-nums text-neutral-300">
+                                <div className="mt-1 flex justify-between text-xs tabular-nums text-[#4B5563]">
                                     <span>{formatTime(currentTime)}</span>
                                     <span>{formatTime(duration)}</span>
                                 </div>
@@ -984,8 +984,8 @@ export default function RoomPage() {
                         </div>
 
                         {needsPlaybackGesture && (
-                            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-blue-400/40 bg-blue-500/10 px-3 py-2">
-                                <span className="text-xs text-neutral-100">
+                            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2">
+                                <span className="text-xs text-[#1F2937]">
                                     Your browser blocked autoplay. Start playback to catch up with the room.
                                 </span>
                                 <Button
@@ -1000,15 +1000,15 @@ export default function RoomPage() {
                                             setNeedsPlaybackGesture(false);
                                         }
                                     }}
-                                    className="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-500 disabled:opacity-50"
+                                    className="rounded-md bg-[#003399] px-3 py-1.5 text-xs font-medium text-white hover:bg-[#002570] disabled:bg-[#9CA3AF] disabled:opacity-100"
                                 >
                                     Start video
                                 </Button>
                             </div>
                         )}
 
-                        <details className="mt-3 border-t border-slate-700 pt-3 sm:mt-5 sm:pt-4">
-                            <summary className="cursor-pointer text-sm font-medium text-neutral-100 marker:text-blue-400">
+                        <details className="mt-3 border-t border-[#D1D5DB] pt-3 sm:mt-5 sm:pt-4">
+                            <summary className="cursor-pointer text-sm font-medium text-[#1F2937] marker:text-[#003399]">
                                 Change video
                             </summary>
                             <div className="mt-2 flex flex-col gap-2 sm:flex-row">
@@ -1019,7 +1019,7 @@ export default function RoomPage() {
                                     value={videoInput}
                                     onChange={(event) => setVideoInput(event.target.value)}
                                     disabled={!canControlVideo || status !== "Connected to watch party!"}
-                                    className="min-w-0 flex-1 rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm outline-none placeholder:text-neutral-300 focus:border-blue-400 disabled:opacity-50"
+                                    className="min-w-0 flex-1 rounded-lg border border-[#D1D5DB] bg-white px-3 py-2.5 text-sm text-[#1F2937] outline-none placeholder:text-[#6B7280] focus:border-[#003399] focus:ring-2 focus:ring-[#003399]/20 disabled:bg-[#F3F4F6] disabled:opacity-100"
                                 />
                                 <Button
                                     variant="primary"
@@ -1048,7 +1048,7 @@ export default function RoomPage() {
                                             }
                                         });
                                     }}
-                                    className="shrink-0 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-40"
+                                    className="shrink-0 rounded-lg bg-[#003399] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-[#002570] disabled:cursor-not-allowed disabled:bg-[#9CA3AF] disabled:opacity-100"
                                 >
                                     Load video
                                 </Button>
@@ -1057,8 +1057,8 @@ export default function RoomPage() {
                     </div>
                 </section>
 
-                <aside className="flex min-h-[360px] max-h-[65dvh] min-w-0 flex-col overflow-hidden rounded-xl border border-slate-800 bg-slate-900 p-3 sm:p-5 lg:min-h-0 lg:max-h-none">
-                    <div className="mb-3 grid shrink-0 grid-cols-2 rounded-lg bg-slate-950 p-1" role="tablist" aria-label="Room sidebar">
+                <aside className="flex min-h-[360px] max-h-[65dvh] min-w-0 flex-col overflow-hidden rounded-xl border border-[#D1D5DB] bg-white p-3 shadow-sm sm:p-5 lg:min-h-0 lg:max-h-none">
+                    <div className="mb-3 grid shrink-0 grid-cols-2 rounded-lg bg-[#F3F4F6] p-1" role="tablist" aria-label="Room sidebar">
                         <Button
                             variant={activeSidebarTab === "people" ? "primary" : "ghost"}
                             size="md"
@@ -1068,7 +1068,7 @@ export default function RoomPage() {
                             aria-selected={activeSidebarTab === "people"}
                             aria-controls="people-panel"
                             onClick={openPeople}
-                            className={`min-h-10 rounded-md px-3 text-sm font-medium transition ${activeSidebarTab === "people" ? "bg-blue-600 text-white" : "text-neutral-300 hover:bg-slate-800 hover:text-white"}`}
+                            className={`min-h-10 rounded-md px-3 text-sm font-medium transition ${activeSidebarTab === "people" ? "bg-[#003399] text-white hover:bg-[#002570]" : "text-[#4B5563] hover:bg-[#E5E7EB] hover:text-[#1F2937]"}`}
                         >
                             People <span className="ml-1 text-xs">({participants.length})</span>
                         </Button>
@@ -1081,11 +1081,11 @@ export default function RoomPage() {
                             aria-selected={activeSidebarTab === "chat"}
                             aria-controls="chat-panel"
                             onClick={openChat}
-                            className={`min-h-10 rounded-md px-3 text-sm font-medium transition ${activeSidebarTab === "chat" ? "bg-blue-600 text-white" : "text-neutral-300 hover:bg-slate-800 hover:text-white"}`}
+                            className={`min-h-10 rounded-md px-3 text-sm font-medium transition ${activeSidebarTab === "chat" ? "bg-[#003399] text-white hover:bg-[#002570]" : "text-[#4B5563] hover:bg-[#E5E7EB] hover:text-[#1F2937]"}`}
                         >
                             Chat
                             {unreadMessageCount > 0 && (
-                                <span className="ml-2 rounded-full bg-blue-500 px-2 py-0.5 text-xs text-white" aria-label={`${unreadMessageCount} unread messages`}>
+                                <span className="ml-2 rounded-full bg-[#003399] px-2 py-0.5 text-xs text-white" aria-label={`${unreadMessageCount} unread messages`}>
                                     {unreadMessageCount > 99 ? "99+" : unreadMessageCount}
                                 </span>
                             )}
@@ -1094,22 +1094,22 @@ export default function RoomPage() {
                     {activeSidebarTab === "people" ? (
                     <div id="people-panel" role="tabpanel" aria-labelledby="people-tab" className="flex min-h-0 flex-1 flex-col">
                     {canControlVideo && (
-                        <section className="mb-3 max-h-48 shrink-0 overflow-y-auto border-b border-slate-700 pb-3 sm:mb-4 sm:pb-4">
+                        <section className="mb-3 max-h-48 shrink-0 overflow-y-auto border-b border-[#D1D5DB] pb-3 sm:mb-4 sm:pb-4">
                             <div className="mb-2 flex items-center justify-between">
                                 <h2 className="font-semibold">Join requests</h2>
-                                <span className="rounded-full bg-blue-500/15 px-2.5 py-1 text-xs text-neutral-100">
+                                <span className="rounded-full bg-[#EFF4FF] px-2.5 py-1 text-xs text-[#003399]">
                                     {joinRequests.length}
                                 </span>
                             </div>
                             {joinRequests.length === 0 ? (
-                                <p className="py-2 text-xs text-neutral-300">No pending requests</p>
+                                <p className="py-2 text-xs text-[#4B5563]">No pending requests</p>
                             ) : (
                                 <div className="space-y-2">
                                     {joinRequests.map((request) => (
-                                        <div key={request.requestId} className="rounded-lg bg-slate-950/70 p-2.5">
+                                        <div key={request.requestId} className="rounded-lg bg-[#F9FAFB] p-2.5">
                                             <p className="truncate text-sm font-medium">{request.username}</p>
                                             {request.requestedAt && (
-                                                <p className="mt-0.5 text-xs text-neutral-300">
+                                                <p className="mt-0.5 text-xs text-[#4B5563]">
                                                     {new Date(request.requestedAt).toLocaleTimeString()}
                                                 </p>
                                             )}
@@ -1121,7 +1121,7 @@ export default function RoomPage() {
                                                     disabled={Boolean(joinRequestActionId)}
                                                     loading={joinRequestActionId === request.requestId}
                                                     onClick={() => resolveRequest(request.requestId, "approved")}
-                                                    className="rounded-md bg-blue-600 px-2.5 py-1 text-xs font-medium hover:bg-blue-500 disabled:opacity-40"
+                                                    className="rounded-md bg-[#003399] px-2.5 py-1 text-xs font-medium text-white hover:bg-[#002570] disabled:bg-[#9CA3AF] disabled:opacity-100"
                                                 >
                                                     {joinRequestActionId === request.requestId ? "Working…" : "Approve"}
                                                 </Button>
@@ -1131,7 +1131,7 @@ export default function RoomPage() {
                                                     type="button"
                                                     disabled={Boolean(joinRequestActionId)}
                                                     onClick={() => resolveRequest(request.requestId, "rejected")}
-                                                    className="rounded-md border border-red-400/40 px-2.5 py-1 text-xs font-medium text-red-200 hover:bg-red-500/10 disabled:opacity-40"
+                                                    className="rounded-md border border-red-300 px-2.5 py-1 text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
                                                 >
                                                     Reject
                                                 </Button>
@@ -1141,32 +1141,32 @@ export default function RoomPage() {
                                 </div>
                             )}
                             {joinRequestError && (
-                                <p className="mt-2 text-xs text-red-200" role="alert">{joinRequestError}</p>
+                                <p className="mt-2 text-xs text-red-700" role="alert">{joinRequestError}</p>
                             )}
                         </section>
                     )}
-                    <div className="flex shrink-0 items-center justify-between border-b border-slate-700 pb-2 sm:pb-4">
+                    <div className="flex shrink-0 items-center justify-between border-b border-[#D1D5DB] pb-2 sm:pb-4">
                         <h2 className="font-semibold">People</h2>
-                        <span className="rounded-full bg-blue-500/15 px-2.5 py-1 text-xs text-neutral-100">
+                        <span className="rounded-full bg-[#EFF4FF] px-2.5 py-1 text-xs text-[#003399]">
                             {participants.length}
                         </span>
                     </div>
-                    <div className="min-h-0 flex-1 divide-y divide-slate-700 overflow-y-auto">
+                    <div className="min-h-0 flex-1 divide-y divide-[#E5E7EB] overflow-y-auto">
                         {participants.map((person) => {
                             const isHost = person.role === "Host" || person.userId === room?.hostId;
                             return (
                                 <div key={person.userId} className="min-w-0 py-2 lg:py-4">
                                     <div className="flex items-center gap-2 lg:gap-3">
-                                        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-blue-500/15 text-sm font-semibold text-blue-200 lg:h-10 lg:w-10">
+                                        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#EFF4FF] text-sm font-semibold text-[#003399] lg:h-10 lg:w-10">
                                             {person.username?.trim()?.charAt(0)?.toUpperCase() || "?"}
                                         </span>
                                         <div className="min-w-0 flex-1">
                                             <p className="truncate text-xs font-medium sm:text-sm">{person.username}</p>
-                                            <p className="mt-0.5 text-xs text-neutral-300">
+                                            <p className="mt-0.5 text-xs text-[#4B5563]">
                                                 {person.userId === userId ? "You" : person.role}
                                             </p>
                                         </div>
-                                        <span className={`rounded-full px-2 py-1 text-xs font-medium ${isHost ? "bg-blue-500/15 text-blue-200" : "bg-neutral-700 text-neutral-200"}`}>
+                                        <span className={`rounded-full px-2 py-1 text-xs font-medium ${isHost ? "bg-[#EFF4FF] text-[#003399]" : "bg-[#F3F4F6] text-[#4B5563]"}`}>
                                             {person.role}
                                         </span>
                                     </div>
@@ -1183,7 +1183,7 @@ export default function RoomPage() {
                                                     person.userId,
                                                     person.role === "Moderator" ? "Participant" : "Moderator"
                                                 )}
-                                                className="rounded-md border border-blue-400/40 px-2 py-1 text-xs font-medium text-blue-200 transition hover:bg-blue-500/15 disabled:cursor-not-allowed disabled:opacity-40"
+                                                className="rounded-md border border-[#003399]/30 px-2 py-1 text-xs font-medium text-[#003399] transition hover:bg-[#EFF4FF] disabled:cursor-not-allowed disabled:opacity-50"
                                             >
                                                 {participantActionId === person.userId
                                                     ? "Updating…"
@@ -1201,7 +1201,7 @@ export default function RoomPage() {
                                                     "room:participant:remove",
                                                     person.userId
                                                 )}
-                                                className="rounded-md border border-red-400/40 px-2 py-1 text-xs font-medium text-red-200 transition hover:bg-red-500/15 disabled:cursor-not-allowed disabled:opacity-40"
+                                                className="rounded-md border border-red-300 px-2 py-1 text-xs font-medium text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
                                             >
                                                 {participantActionId === person.userId ? "Working…" : "Remove"}
                                             </Button>
@@ -1211,11 +1211,11 @@ export default function RoomPage() {
                             );
                         })}
                         {participants.length === 0 && (
-                            <p className="py-3 text-sm text-neutral-300 lg:py-6">Loading participants…</p>
+                            <p className="py-3 text-sm text-[#4B5563] lg:py-6">Loading participants…</p>
                         )}
                     </div>
                     {participantActionError && (
-                        <p className="mt-2 rounded-md border border-red-400/30 bg-red-500/10 px-3 py-2 text-xs text-red-200" role="alert">
+                        <p className="mt-2 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-800" role="alert">
                             {participantActionError}
                         </p>
                     )}
@@ -1235,7 +1235,7 @@ export default function RoomPage() {
                             />
                         </div>
                     )}
-                    <div className="shrink-0 border-t border-slate-700 pt-2 sm:pt-4">
+                    <div className="shrink-0 border-t border-[#D1D5DB] pt-2 sm:pt-4">
                         {isHost && (
                             <Button
                                 variant="danger"
@@ -1244,7 +1244,7 @@ export default function RoomPage() {
                                 onClick={endMeeting}
                                 disabled={hostActionPending || status !== "Connected to watch party!"}
                                 loading={hostActionPending}
-                                className="mb-2 w-full rounded-lg border border-red-400/50 px-3 py-2 text-xs font-medium text-red-200 transition hover:bg-red-500/15 disabled:cursor-not-allowed disabled:opacity-40 sm:py-2.5 sm:text-sm"
+                                className="mb-2 w-full rounded-lg border border-red-300 px-3 py-2 text-xs font-medium text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50 sm:py-2.5 sm:text-sm"
                             >
                                 {hostActionPending ? "Please wait…" : "End Meeting for Everyone"}
                             </Button>
@@ -1255,7 +1255,7 @@ export default function RoomPage() {
                                 size="md"
                                 type="button"
                                 onClick={shareRoomCode}
-                                className="w-full rounded-lg border border-blue-400/50 px-3 py-2 text-xs font-medium text-neutral-100 transition hover:bg-blue-500/15 sm:py-2.5 sm:text-sm"
+                                className="w-full rounded-lg border border-[#003399]/30 px-3 py-2 text-xs font-medium text-[#003399] transition hover:bg-[#EFF4FF] sm:py-2.5 sm:text-sm"
                             >
                                 {shareStatus || "Share room code"}
                             </Button>
@@ -1266,14 +1266,14 @@ export default function RoomPage() {
                                 onClick={leaveMeeting}
                                 disabled={hostActionPending}
                                 loading={hostActionPending}
-                                className="w-full rounded-lg bg-blue-600 px-3 py-2 text-xs font-medium text-white transition hover:bg-blue-500 sm:py-2.5 sm:text-sm lg:mt-2"
+                                className="w-full rounded-lg bg-[#003399] px-3 py-2 text-xs font-medium text-white transition hover:bg-[#002570] disabled:bg-[#9CA3AF] sm:py-2.5 sm:text-sm lg:mt-2"
                             >
                                 {hostActionPending ? "Leaving…" : "Leave meeting"}
                             </Button>
                         </div>
                     </div>
                     {hostActionError && (
-                        <p className="mt-2 rounded-md border border-amber-400/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-100" role="alert">
+                        <p className="mt-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800" role="alert">
                             {hostActionError}
                         </p>
                     )}
@@ -1282,7 +1282,7 @@ export default function RoomPage() {
 
             {error && (
                 <div className="pointer-events-none absolute inset-x-3 bottom-3 z-10 mx-auto max-w-[1500px] sm:inset-x-6 lg:inset-x-8">
-                    <p className="pointer-events-auto rounded-lg border border-blue-400/50 bg-slate-900 px-4 py-3 text-sm text-neutral-100 shadow-lg" role="alert">
+                    <p className="pointer-events-auto rounded-lg border border-[#003399]/20 bg-white px-4 py-3 text-sm text-[#1F2937] shadow-lg" role="alert">
                         {error}
                     </p>
                 </div>

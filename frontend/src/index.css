@@ -6,15 +6,40 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  color-scheme: dark;
+  color-scheme: light;
+  color: #1F2937;
+  background: #DEDEDE;
 }
 
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  background: #DEDEDE;
+  color: #1F2937;
 }
 
 #root {
   min-height: 100vh;
+}
+
+::selection {
+  background: #003399;
+  color: #FFFFFF;
+}
+
+input,
+textarea,
+select {
+  color: #1F2937;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #6B7280;
+  opacity: 1;
+}
+
+input[type="range"] {
+  accent-color: #003399;
 }

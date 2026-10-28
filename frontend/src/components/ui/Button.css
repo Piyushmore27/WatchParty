@@ -2,27 +2,33 @@
 
 @layer components {
   .ui-button {
-    @apply inline-flex items-center justify-center gap-2 font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-300 disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2 font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#003399] disabled:cursor-not-allowed;
+  }
+
+  .ui-button:disabled {
+    background-color: #9CA3AF;
+    color: #FFFFFF;
+    opacity: 1;
   }
 
   .ui-button--primary {
-    @apply bg-blue-600 text-white hover:bg-blue-500;
+    @apply bg-[#003399] text-white hover:bg-[#002570] active:bg-[#001D5C] disabled:bg-[#9CA3AF] disabled:text-white;
   }
 
   .ui-button--secondary {
-    @apply bg-white text-slate-950 hover:bg-neutral-100;
+    @apply bg-white text-[#1F2937] hover:bg-[#F3F4F6];
   }
 
   .ui-button--outline {
-    @apply border border-slate-700 text-neutral-100 hover:bg-slate-800;
+    @apply border border-[#D1D5DB] text-[#003399] hover:bg-[#EFF4FF];
   }
 
   .ui-button--ghost {
-    @apply text-neutral-100 hover:bg-slate-800;
+    @apply text-[#4B5563] hover:bg-[#F3F4F6] hover:text-[#1F2937];
   }
 
   .ui-button--danger {
-    @apply border border-red-400/40 text-red-200 hover:bg-red-500/10;
+    @apply border border-red-300 text-red-700 hover:bg-red-50;
   }
 
   .ui-button--sm {
