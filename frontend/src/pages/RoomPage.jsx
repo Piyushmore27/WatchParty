@@ -4,6 +4,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { socket } from "../socket/socket.js";
 import YouTubePlayer from "../components/YouTubePlayer.jsx";
 import RoomChat from "../components/RoomChat.jsx";
+import Button from "../components/ui/Button.jsx";
 
 const SYNC_INTERVAL_MS = 2500;
 const DRIFT_THRESHOLD_SECONDS = 1.5;
@@ -864,7 +865,9 @@ export default function RoomPage() {
                             : "Waiting for the Host or Moderator to approve your request."}
                     </p>
                     {error && <p className="mt-3 text-sm text-red-200" role="alert">{error}</p>}
-                    <button
+                    <Button
+                        variant="primary"
+                        size="md"
                         type="button"
                         onClick={() => {
                             socket.disconnect();
@@ -873,7 +876,7 @@ export default function RoomPage() {
                         className="mt-5 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium hover:bg-blue-500"
                     >
                         Return home
-                    </button>
+                    </Button>
                 </section>
             </main>
         );
@@ -937,7 +940,9 @@ export default function RoomPage() {
 
                     <div className="mt-2 shrink-0 rounded-xl  border border-slate-800 bg-slate-900  p-3 sm:mt-4 sm:p-5">
                         <div className="flex items-center gap-4">
-                            <button
+                            <Button
+                                variant="primary"
+                                size="sm"
                                 type="button"
                                 onClick={isPlaying ? handlePause : handlePlay}
                                 aria-label={isPlaying ? "Pause video" : "Play video"}
@@ -946,7 +951,7 @@ export default function RoomPage() {
                                 title={canControlVideo ? undefined : "Only the host or a moderator can control the video"}
                             >
                                 {isPlaying ? "Ⅱ" : "▶"}
-                            </button>
+                            </Button>
                             <div className="min-w-0 flex-1">
                                 <input
                                     aria-label="Seek video"
@@ -983,7 +988,9 @@ export default function RoomPage() {
                                 <span className="text-xs text-neutral-100">
                                     Your browser blocked autoplay. Start playback to catch up with the room.
                                 </span>
-                                <button
+                                <Button
+                                    variant="primary"
+                                    size="sm"
                                     type="button"
                                     disabled={!playerReady}
                                     onClick={() => {
@@ -996,7 +1003,7 @@ export default function RoomPage() {
                                     className="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-500 disabled:opacity-50"
                                 >
                                     Start video
-                                </button>
+                                </Button>
                             </div>
                         )}
 
@@ -1014,7 +1021,9 @@ export default function RoomPage() {
                                     disabled={!canControlVideo || status !== "Connected to watch party!"}
                                     className="min-w-0 flex-1 rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm outline-none placeholder:text-neutral-300 focus:border-blue-400 disabled:opacity-50"
                                 />
-                                <button
+                                <Button
+                                    variant="primary"
+                                    size="md"
                                     type="button"
                                     disabled={!canControlVideo || status !== "Connected to watch party!"}
                                     onClick={() => {
@@ -1042,7 +1051,7 @@ export default function RoomPage() {
                                     className="shrink-0 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-40"
                                 >
                                     Load video
-                                </button>
+                                </Button>
                             </div>
                         </details>
                     </div>
@@ -1050,7 +1059,9 @@ export default function RoomPage() {
 
                 <aside className="flex min-h-[360px] max-h-[65dvh] min-w-0 flex-col overflow-hidden rounded-xl border border-slate-800 bg-slate-900 p-3 sm:p-5 lg:min-h-0 lg:max-h-none">
                     <div className="mb-3 grid shrink-0 grid-cols-2 rounded-lg bg-slate-950 p-1" role="tablist" aria-label="Room sidebar">
-                        <button
+                        <Button
+                            variant={activeSidebarTab === "people" ? "primary" : "ghost"}
+                            size="md"
                             type="button"
                             id="people-tab"
                             role="tab"
@@ -1060,8 +1071,10 @@ export default function RoomPage() {
                             className={`min-h-10 rounded-md px-3 text-sm font-medium transition ${activeSidebarTab === "people" ? "bg-blue-600 text-white" : "text-neutral-300 hover:bg-slate-800 hover:text-white"}`}
                         >
                             People <span className="ml-1 text-xs">({participants.length})</span>
-                        </button>
-                        <button
+                        </Button>
+                        <Button
+                            variant={activeSidebarTab === "chat" ? "primary" : "ghost"}
+                            size="md"
                             type="button"
                             id="chat-tab"
                             role="tab"
@@ -1076,7 +1089,7 @@ export default function RoomPage() {
                                     {unreadMessageCount > 99 ? "99+" : unreadMessageCount}
                                 </span>
                             )}
-                        </button>
+                        </Button>
                     </div>
                     {activeSidebarTab === "people" ? (
                     <div id="people-panel" role="tabpanel" aria-labelledby="people-tab" className="flex min-h-0 flex-1 flex-col">
@@ -1101,22 +1114,27 @@ export default function RoomPage() {
                                                 </p>
                                             )}
                                             <div className="mt-2 flex gap-2">
-                                                <button
+                                                <Button
+                                                    variant="primary"
+                                                    size="sm"
                                                     type="button"
                                                     disabled={Boolean(joinRequestActionId)}
+                                                    loading={joinRequestActionId === request.requestId}
                                                     onClick={() => resolveRequest(request.requestId, "approved")}
                                                     className="rounded-md bg-blue-600 px-2.5 py-1 text-xs font-medium hover:bg-blue-500 disabled:opacity-40"
                                                 >
                                                     {joinRequestActionId === request.requestId ? "Working…" : "Approve"}
-                                                </button>
-                                                <button
+                                                </Button>
+                                                <Button
+                                                    variant="danger"
+                                                    size="sm"
                                                     type="button"
                                                     disabled={Boolean(joinRequestActionId)}
                                                     onClick={() => resolveRequest(request.requestId, "rejected")}
                                                     className="rounded-md border border-red-400/40 px-2.5 py-1 text-xs font-medium text-red-200 hover:bg-red-500/10 disabled:opacity-40"
                                                 >
                                                     Reject
-                                                </button>
+                                                </Button>
                                             </div>
                                         </div>
                                     ))}
@@ -1154,9 +1172,12 @@ export default function RoomPage() {
                                     </div>
                                     {canControlVideo && person.userId !== room.hostId && person.userId !== userId && (
                                         <div className="mt-2 flex gap-2 pl-11 lg:pl-[52px]">
-                                            <button
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
                                                 type="button"
                                                 disabled={Boolean(participantActionId) || status !== "Connected to watch party!"}
+                                                loading={participantActionId === person.userId}
                                                 onClick={() => manageParticipant(
                                                     "room:role:update",
                                                     person.userId,
@@ -1169,10 +1190,13 @@ export default function RoomPage() {
                                                     : person.role === "Moderator"
                                                         ? "Demote"
                                                         : "Make moderator"}
-                                            </button>
-                                            <button
+                                            </Button>
+                                            <Button
+                                                variant="danger"
+                                                size="sm"
                                                 type="button"
                                                 disabled={Boolean(participantActionId) || status !== "Connected to watch party!"}
+                                                loading={participantActionId === person.userId}
                                                 onClick={() => manageParticipant(
                                                     "room:participant:remove",
                                                     person.userId
@@ -1180,7 +1204,7 @@ export default function RoomPage() {
                                                 className="rounded-md border border-red-400/40 px-2 py-1 text-xs font-medium text-red-200 transition hover:bg-red-500/15 disabled:cursor-not-allowed disabled:opacity-40"
                                             >
                                                 {participantActionId === person.userId ? "Working…" : "Remove"}
-                                            </button>
+                                            </Button>
                                         </div>
                                     )}
                                 </div>
@@ -1213,31 +1237,39 @@ export default function RoomPage() {
                     )}
                     <div className="shrink-0 border-t border-slate-700 pt-2 sm:pt-4">
                         {isHost && (
-                            <button
+                            <Button
+                                variant="danger"
+                                size="md"
                                 type="button"
                                 onClick={endMeeting}
                                 disabled={hostActionPending || status !== "Connected to watch party!"}
+                                loading={hostActionPending}
                                 className="mb-2 w-full rounded-lg border border-red-400/50 px-3 py-2 text-xs font-medium text-red-200 transition hover:bg-red-500/15 disabled:cursor-not-allowed disabled:opacity-40 sm:py-2.5 sm:text-sm"
                             >
                                 {hostActionPending ? "Please wait…" : "End Meeting for Everyone"}
-                            </button>
+                            </Button>
                         )}
                         <div className="flex gap-2 lg:block">
-                            <button
+                            <Button
+                                variant="outline"
+                                size="md"
                                 type="button"
                                 onClick={shareRoomCode}
                                 className="w-full rounded-lg border border-blue-400/50 px-3 py-2 text-xs font-medium text-neutral-100 transition hover:bg-blue-500/15 sm:py-2.5 sm:text-sm"
                             >
                                 {shareStatus || "Share room code"}
-                            </button>
-                            <button
+                            </Button>
+                            <Button
+                                variant="primary"
+                                size="md"
                                 type="button"
                                 onClick={leaveMeeting}
                                 disabled={hostActionPending}
+                                loading={hostActionPending}
                                 className="w-full rounded-lg bg-blue-600 px-3 py-2 text-xs font-medium text-white transition hover:bg-blue-500 sm:py-2.5 sm:text-sm lg:mt-2"
                             >
                                 {hostActionPending ? "Leaving…" : "Leave meeting"}
-                            </button>
+                            </Button>
                         </div>
                     </div>
                     {hostActionError && (

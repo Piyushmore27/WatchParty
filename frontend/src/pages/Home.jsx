@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import Button from "../components/ui/Button.jsx";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
@@ -152,14 +153,16 @@ export default function Home() {
                   className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-2.5 text-base text-white outline-none transition placeholder:text-neutral-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 sm:py-3"
                 />
               </label>
-              <button
+              <Button
+                variant="primary"
+                size="md"
                 type="button"
                 onClick={saveName}
                 disabled={!name.trim()}
                 className="mt-2 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-45 sm:mt-3 sm:min-h-11 sm:py-2.5"
               >
                 {nameIsSaved ? "Name saved" : "Save name"}
-              </button>
+              </Button>
             </div>
             {nameIsSaved && (
               <p className="mt-2 text-sm text-emerald-300 sm:mt-3" role="status">
@@ -176,10 +179,13 @@ export default function Home() {
               </div>
 
               <div className="space-y-3 sm:space-y-4">
-                <button
+                <Button
+                  variant="primary"
+                  size="lg"
                   type="button"
                   onClick={() => enterRoom("host")}
                   disabled={!nameIsSaved || Boolean(activeAction)}
+                  loading={activeAction === "host"}
                   className="group flex w-full items-center gap-4 rounded-lg bg-blue-600 p-3 text-left text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:bg-blue-600 sm:p-5"
                 >
                   <span className="min-w-0 flex-1">
@@ -187,7 +193,7 @@ export default function Home() {
                     <span className="mt-1 hidden text-sm text-blue-100 sm:block">Create a room and invite your friends</span>
                   </span>
                   <ArrowIcon />
-                </button>
+                </Button>
 
                 <div className="rounded-lg border border-slate-700 bg-slate-950 p-3 sm:p-4">
                   <label htmlFor="room-code" className="mb-2 block text-sm font-medium text-neutral-100">Joining a friend?</label>
@@ -205,15 +211,18 @@ export default function Home() {
                       autoCapitalize="characters"
                       className="min-w-0 flex-1 rounded-lg border border-slate-700 bg-slate-900 px-3 py-2.5 font-mono uppercase tracking-widest text-white outline-none transition placeholder:font-sans placeholder:normal-case placeholder:tracking-normal placeholder:text-neutral-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 sm:py-3"
                     />
-                    <button
+                    <Button
+                      variant="secondary"
+                      size="md"
                       type="button"
                       onClick={() => enterRoom("join")}
                       disabled={!nameIsSaved || normalizedRoomCode.length !== 8 || Boolean(activeAction)}
+                      loading={activeAction === "join"}
                       className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-white px-4 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-neutral-100 disabled:cursor-not-allowed disabled:opacity-40 sm:py-3"
                     >
                       {activeAction === "join" ? "Joining…" : "Join"}
                       {activeAction !== "join" && <ArrowIcon />}
-                    </button>
+                    </Button>
                   </div>
                 </div>
               </div>

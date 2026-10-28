@@ -1,0 +1,55 @@
+@reference "../../index.css";
+
+@layer components {
+  .ui-button {
+    @apply inline-flex items-center justify-center gap-2 font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-300 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .ui-button--primary {
+    @apply bg-blue-600 text-white hover:bg-blue-500;
+  }
+
+  .ui-button--secondary {
+    @apply bg-white text-slate-950 hover:bg-neutral-100;
+  }
+
+  .ui-button--outline {
+    @apply border border-slate-700 text-neutral-100 hover:bg-slate-800;
+  }
+
+  .ui-button--ghost {
+    @apply text-neutral-100 hover:bg-slate-800;
+  }
+
+  .ui-button--danger {
+    @apply border border-red-400/40 text-red-200 hover:bg-red-500/10;
+  }
+
+  .ui-button--sm {
+    @apply min-h-8 rounded-md px-2.5 py-1 text-xs;
+  }
+
+  .ui-button--md {
+    @apply min-h-10 rounded-lg px-4 py-2 text-sm;
+  }
+
+  .ui-button--lg {
+    @apply min-h-11 rounded-lg px-5 py-2.5 text-sm;
+  }
+
+  .ui-button--full-width {
+    @apply w-full;
+  }
+
+  .ui-button__spinner {
+    @apply h-4 w-4 shrink-0 animate-spin;
+  }
+
+  .ui-button__spinner-track {
+    @apply opacity-25;
+  }
+
+  .ui-button__spinner-indicator {
+    @apply opacity-75;
+  }
+}

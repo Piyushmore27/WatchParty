@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import Button from "./ui/Button.jsx";
 
 const formatMessageTime = (value) => {
   const date = new Date(value);
@@ -86,9 +87,9 @@ export default function RoomChat({
         {error && (
           <div className="rounded-lg border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-100" role="alert">
             <p>{error}</p>
-            <button type="button" onClick={onRetry} className="mt-2 min-h-10 rounded-md px-2 font-medium underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-300">
+            <Button type="button" variant="ghost" size="md" onClick={onRetry} className="mt-2 min-h-10 rounded-md px-2 font-medium underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-300">
               Retry
-            </button>
+            </Button>
           </div>
         )}
         {messages.map((message) => {
@@ -136,13 +137,16 @@ export default function RoomChat({
             placeholder="Send a message"
             className="min-h-11 min-w-0 flex-1 resize-none rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white outline-none placeholder:text-neutral-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
           />
-          <button
+          <Button
             type="submit"
             disabled={!draft.trim() || sending}
+            loading={sending}
+            variant="primary"
+            size="md"
             className="min-h-11 shrink-0 rounded-lg bg-blue-600 px-4 text-sm font-semibold text-white hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-300 disabled:cursor-not-allowed disabled:opacity-40"
           >
             {sending ? "Sending…" : "Send"}
-          </button>
+          </Button>
         </div>
         {sendError && <p className="mt-2 text-xs text-red-200" role="alert">{sendError}</p>}
         <p className="mt-1 text-right text-[10px] text-neutral-400">Enter to send · Shift + Enter for a new line</p>
