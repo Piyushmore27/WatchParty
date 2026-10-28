@@ -43,3 +43,39 @@ textarea::placeholder {
 input[type="range"] {
   accent-color: #003399;
 }
+
+.participant-toast {
+  animation:
+    participant-toast-enter 180ms ease-out both,
+    participant-toast-exit 250ms ease-in 2.5s forwards;
+}
+
+@keyframes participant-toast-enter {
+  from {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes participant-toast-exit {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  to {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .participant-toast {
+    animation-duration: 1ms;
+  }
+}

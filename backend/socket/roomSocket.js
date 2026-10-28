@@ -14,9 +14,15 @@ import {
     saveRoomChatMessage,
 } from "../services/roomService.js";
 import { authorizeRoomSocket } from "../middleware/authorizeRoomSocket.js";
+import {
+    getActiveParticipants,
+    getParticipantPresenceKey,
+    hasConnectedParticipantSocket,
+} from "./participantPresence.js";
 import crypto from "node:crypto";
 
 const SYNC_PERSIST_INTERVAL_MS = 5_000;
+const DISCONNECT_GRACE_PERIOD_MS = 1_500;
 const CHAT_MAX_LENGTH = 1000;
 const CHAT_RATE_LIMIT_MS = 700;
 const VIDEO_ID_PATTERN = /^[a-zA-Z0-9_-]{11}$/;
@@ -29,6 +35,8 @@ export const registerRoomSocket = (io) => {
     const lastSyncPersistedAt = new Map();
     const announcedJoinRequests = new Set();
     const lastChatMessageAt = new Map();
+    const pendingDisconnects = new Map();
+    const participantListVersions = new Map();
 
     const authorizeVideoControl = async (socket, data, callback) => {
         try {
@@ -103,13 +111,74 @@ export const registerRoomSocket = (io) => {
         }
     };
 
-    const serializeParticipants = (participants) =>
-        participants.map(({ userId, username, role, joinedAt }) => ({
-            userId,
-            username,
-            role,
-            joinedAt,
-        }));
+    const publishParticipants = async (roomCode) => {
+        const participantRoom = await getRoomByCode(roomCode);
+        const version = (participantListVersions.get(roomCode) || 0) + 1;
+        participantListVersions.set(roomCode, version);
+        const payload = {
+            hostId: participantRoom.hostId,
+            participantsVersion: version,
+            participants: getActiveParticipants(
+                participantRoom.participants,
+                onlineUsers,
+                roomCode
+            ),
+        };
+        io.to(roomCode).emit("room:participants-updated", payload);
+        return payload;
+    };
+
+    const cancelPendingDisconnect = (roomCode, userId) => {
+        const key = getParticipantPresenceKey(roomCode, userId);
+        const pending = pendingDisconnects.get(key);
+        if (!pending) return false;
+        clearTimeout(pending.timer);
+        pendingDisconnects.delete(key);
+        const pendingSession = onlineUsers.get(pending.socketId);
+        if (pendingSession?.isDisconnected) onlineUsers.delete(pending.socketId);
+        return true;
+    };
+
+    const cancelRoomDisconnects = (roomCode) => {
+        const prefix = `${roomCode}:`;
+        for (const [key, pending] of pendingDisconnects) {
+            if (!key.startsWith(prefix)) continue;
+            clearTimeout(pending.timer);
+            pendingDisconnects.delete(key);
+            const pendingSession = onlineUsers.get(pending.socketId);
+            if (pendingSession?.isDisconnected) onlineUsers.delete(pending.socketId);
+        }
+    };
+
+    const publishParticipantNotification = (
+        roomCode,
+        action,
+        participant,
+        excludedUserId = null
+    ) => {
+        const excludedSocketIds = [];
+        if (excludedUserId) {
+            for (const [socketId, session] of onlineUsers) {
+                if (
+                    session.roomCode === roomCode &&
+                    session.userId === excludedUserId &&
+                    session.isRoomMember
+                ) {
+                    excludedSocketIds.push(socketId);
+                }
+            }
+        }
+
+        io.to(roomCode)
+            .except(excludedSocketIds)
+            .emit("room:participant-notification", {
+                id: crypto.randomUUID(),
+                roomCode,
+                action,
+                userId: participant.userId,
+                username: participant.username,
+            });
+    };
 
     const notifyManagers = async (roomCode, eventName, payload) => {
         try {
@@ -205,49 +274,78 @@ export const registerRoomSocket = (io) => {
                     });
                 }
 
+                const participant = room.participants.find(
+                    ({ userId }) => userId === data.userId
+                );
+                const isReconnecting = cancelPendingDisconnect(
+                    normalizedCode,
+                    data.userId
+                );
+                const alreadyConnected = hasConnectedParticipantSocket(
+                    onlineUsers,
+                    normalizedCode,
+                    data.userId
+                );
+                const previousSession = onlineUsers.get(socket.id);
+                if (
+                    previousSession?.isRoomMember &&
+                    previousSession.roomCode !== normalizedCode
+                ) {
+                    onlineUsers.delete(socket.id);
+                    await socket.leave(previousSession.roomCode);
+                    await publishParticipants(previousSession.roomCode);
+                    if (!hasConnectedParticipantSocket(
+                        onlineUsers,
+                        previousSession.roomCode,
+                        previousSession.userId
+                    )) {
+                        publishParticipantNotification(
+                            previousSession.roomCode,
+                            "left",
+                            previousSession
+                        );
+                    }
+                }
                 for (const joinedRoom of socket.rooms) {
-                    if (joinedRoom !== socket.id) await socket.leave(joinedRoom);
+                    if (joinedRoom !== socket.id && joinedRoom !== normalizedCode) {
+                        await socket.leave(joinedRoom);
+                    }
                 }
                 await socket.join(normalizedCode);
                 onlineUsers.set(socket.id, {
                     roomCode: normalizedCode,
                     userId: data.userId,
+                    username: participant.username,
+                    isRoomMember: true,
+                    isDisconnected: false,
                 });
 
+                const pendingJoinRequests = ["Host", "Moderator"].includes(
+                    participant.role
+                )
+                    ? await listPendingJoinRequests(normalizedCode, data.userId)
+                    : [];
+                const participantSnapshot = await publishParticipants(normalizedCode);
                 callback?.({
                     success: true,
                     message: "Joined Socket.IO room successfully",
                     roomCode: normalizedCode,
                     room: {
                         hostId: room.hostId,
-                        participants: room.participants.map(
-                            ({ userId, username, role, joinedAt }) => ({
-                                userId,
-                                username,
-                                role,
-                                joinedAt,
-                            })
-                        ),
+                        participants: participantSnapshot.participants,
+                        participantsVersion: participantSnapshot.participantsVersion,
                         video: getRoomVideoState(room),
-                        pendingJoinRequests: ["Host", "Moderator"].includes(
-                            room.participants.find(
-                                ({ userId }) => userId === data.userId
-                            )?.role
-                        )
-                            ? await listPendingJoinRequests(normalizedCode, data.userId)
-                            : [],
+                        pendingJoinRequests,
                     },
                 });
-                io.to(normalizedCode).emit("room:participants-updated", {
-                    participants: room.participants.map(
-                        ({ userId, username, role, joinedAt }) => ({
-                            userId,
-                            username,
-                            role,
-                            joinedAt,
-                        })
-                    ),
-                });
+                if (!alreadyConnected && !isReconnecting) {
+                    publishParticipantNotification(
+                        normalizedCode,
+                        "joined",
+                        participant,
+                        data.userId
+                    );
+                }
             } catch (error) {
                 console.error("room:join error:", error);
                 callback?.({
@@ -272,6 +370,13 @@ export const registerRoomSocket = (io) => {
                 return callback?.({
                     success: false,
                     message: "A valid join request session is required",
+                });
+            }
+
+            if (onlineUsers.get(socket.id)?.isRoomMember) {
+                return callback?.({
+                    success: false,
+                    message: "Leave the active room before watching another join request",
                 });
             }
 
@@ -335,9 +440,117 @@ export const registerRoomSocket = (io) => {
             }
         });
 
-        socket.on("disconnect", () => {
-            onlineUsers.delete(socket.id);
+        socket.on("room:leave", async (data, callback) => {
+            const session = onlineUsers.get(socket.id);
+            const roomCode = typeof data?.roomCode === "string"
+                ? data.roomCode.trim().toUpperCase()
+                : "";
+            if (
+                session &&
+                (session.roomCode !== roomCode || session.userId !== data?.userId)
+            ) {
+                return callback?.({
+                    success: false,
+                    message: "Socket session is not authorized to leave this room",
+                });
+            }
+
+            if (session?.isRoomMember) {
+                onlineUsers.delete(socket.id);
+                await socket.leave(session.roomCode);
+                const hasConnectedSession = hasConnectedParticipantSocket(
+                    onlineUsers,
+                    session.roomCode,
+                    session.userId
+                );
+                if (!hasConnectedSession) {
+                    cancelPendingDisconnect(session.roomCode, session.userId);
+                }
+                try {
+                    await publishParticipants(session.roomCode);
+                } catch (error) {
+                    console.error("room:leave participant broadcast failed:", error);
+                    callback?.({
+                        success: false,
+                        message: "You left the room, but the participant list could not be updated",
+                    });
+                    return;
+                }
+                if (!hasConnectedSession) {
+                    publishParticipantNotification(
+                        session.roomCode,
+                        "left",
+                        session
+                    );
+                }
+            } else if (session) {
+                onlineUsers.delete(socket.id);
+            }
+            callback?.({ success: true });
+        });
+
+        socket.on("disconnect", async () => {
+            const session = onlineUsers.get(socket.id);
             lastChatMessageAt.delete(socket.id);
+            if (!session) return;
+            if (!session.isRoomMember) {
+                onlineUsers.delete(socket.id);
+                return;
+            }
+            session.isDisconnected = true;
+            if (hasConnectedParticipantSocket(
+                onlineUsers,
+                session.roomCode,
+                session.userId
+            )) {
+                onlineUsers.delete(socket.id);
+                try {
+                    await publishParticipants(session.roomCode);
+                } catch (error) {
+                    console.error("Socket disconnect participant broadcast failed:", {
+                        roomCode: session.roomCode,
+                        socketId: socket.id,
+                        message: error.message,
+                    });
+                }
+                return;
+            }
+
+            const key = getParticipantPresenceKey(session.roomCode, session.userId);
+            const existingPending = pendingDisconnects.get(key);
+            if (existingPending) {
+                clearTimeout(existingPending.timer);
+                onlineUsers.delete(existingPending.socketId);
+            }
+            const timer = setTimeout(async () => {
+                const pending = pendingDisconnects.get(key);
+                if (pending?.socketId !== socket.id) return;
+                pendingDisconnects.delete(key);
+                onlineUsers.delete(socket.id);
+                try {
+                    await publishParticipants(session.roomCode);
+                    if (!hasConnectedParticipantSocket(
+                        onlineUsers,
+                        session.roomCode,
+                        session.userId
+                    )) {
+                        publishParticipantNotification(
+                            session.roomCode,
+                            "left",
+                            session
+                        );
+                    }
+                } catch (error) {
+                    if (error.message !== "Room-not-found") {
+                        console.error("Socket disconnect participant broadcast failed:", {
+                            roomCode: session.roomCode,
+                            socketId: socket.id,
+                            message: error.message,
+                        });
+                    }
+                }
+            }, DISCONNECT_GRACE_PERIOD_MS);
+            pendingDisconnects.set(key, { socketId: socket.id, timer });
         });
 
         socket.on("chat:history:load", async (data, callback) => {
@@ -501,19 +714,11 @@ export const registerRoomSocket = (io) => {
                 });
             }
 
-            callback?.({
-                success: true,
-                newHostId: room.hostId,
-            });
-
             try {
-                io.to(authorized.roomCode)
-                    .except(socket.id)
-                    .emit("room:participants-updated", {
-                        hostId: room.hostId,
-                        participants: serializeParticipants(room.participants),
-                    });
-
+                const formerHost = authorized.room.participants.find(
+                    ({ userId }) => userId === authorized.hostUserId
+                );
+                cancelPendingDisconnect(authorized.roomCode, authorized.hostUserId);
                 const formerHostSocketIds = [];
                 for (const [socketId, session] of onlineUsers) {
                     if (
@@ -539,6 +744,14 @@ export const registerRoomSocket = (io) => {
                         }
                     }
                 }
+                await publishParticipants(authorized.roomCode);
+                if (formerHost) {
+                    publishParticipantNotification(
+                        authorized.roomCode,
+                        "left",
+                        formerHost
+                    );
+                }
             } catch (error) {
                 console.error("room:host:leave socket cleanup failed after committed transfer:", {
                     roomCode: authorized.roomCode,
@@ -547,6 +760,10 @@ export const registerRoomSocket = (io) => {
                     message: error.message,
                 });
             }
+            callback?.({
+                success: true,
+                newHostId: room.hostId,
+            });
         });
 
         socket.on("room:end", async (data, callback) => {
@@ -556,6 +773,7 @@ export const registerRoomSocket = (io) => {
             try {
                 await endRoom(authorized.roomCode, authorized.hostUserId);
                 lastSyncPersistedAt.delete(authorized.roomCode);
+                cancelRoomDisconnects(authorized.roomCode);
                 io.to(authorized.roomCode).emit("room:ended", {
                     message: "The Host has ended this meeting.",
                 });
@@ -616,18 +834,15 @@ export const registerRoomSocket = (io) => {
                 });
             }
             try {
-                const room = await updateParticipantRole(
+                await updateParticipantRole(
                     authorized.roomCode,
                     authorized.actorUserId,
                     data.targetUserId,
                     data.role
                 );
-                const participants = serializeParticipants(room.participants);
-                io.to(authorized.roomCode).emit("room:participants-updated", {
-                    participants,
-                });
+                const participantSnapshot = await publishParticipants(authorized.roomCode);
                 await publishPendingRequests(authorized.roomCode);
-                callback?.({ success: true, participants });
+                callback?.({ success: true, ...participantSnapshot });
             } catch (error) {
                 if (
                     error.message === "Invalid-participant-role" ||
@@ -667,17 +882,15 @@ export const registerRoomSocket = (io) => {
             }
 
             try {
-                const room = await removeRoomParticipant(
+                const removedParticipant = authorized.room.participants.find(
+                    ({ userId }) => userId === data.targetUserId
+                );
+                await removeRoomParticipant(
                     authorized.roomCode,
                     authorized.actorUserId,
                     data.targetUserId
                 );
-                const participants = serializeParticipants(room.participants);
-                io.to(authorized.roomCode).emit("room:participants-updated", {
-                    participants,
-                });
-                await publishPendingRequests(authorized.roomCode);
-
+                cancelPendingDisconnect(authorized.roomCode, data.targetUserId);
                 const removedSocketIds = [];
                 for (const [socketId, session] of onlineUsers) {
                     if (
@@ -700,7 +913,16 @@ export const registerRoomSocket = (io) => {
                     }
                 }
 
-                callback?.({ success: true, participants });
+                const participantSnapshot = await publishParticipants(authorized.roomCode);
+                if (removedParticipant) {
+                    publishParticipantNotification(
+                        authorized.roomCode,
+                        "left",
+                        removedParticipant
+                    );
+                }
+                await publishPendingRequests(authorized.roomCode);
+                callback?.({ success: true, ...participantSnapshot });
             } catch (error) {
                 if (
                     error.message === "Host-cannot-be-removed" ||
@@ -754,17 +976,15 @@ export const registerRoomSocket = (io) => {
             }
 
             try {
-                const { room, request } = await resolveJoinRequest({
+                const { request } = await resolveJoinRequest({
                     roomCode: authorized.roomCode,
                     actorUserId: authorized.actorUserId,
                     requestId: data.requestId,
                     decision: data.decision,
                 });
-                const participants = serializeParticipants(room.participants);
+                let participantSnapshot = null;
                 if (data.decision === "approved") {
-                    io.to(authorized.roomCode).emit("room:participants-updated", {
-                        participants,
-                    });
+                    participantSnapshot = await publishParticipants(authorized.roomCode);
                 }
 
                 const requestTokenHash = request.sessionTokenHash;
@@ -786,7 +1006,11 @@ export const registerRoomSocket = (io) => {
                     }
                 }
                 await publishPendingRequests(authorized.roomCode);
-                callback?.({ success: true, status: request.status, participants });
+                callback?.({
+                    success: true,
+                    status: request.status,
+                    ...(participantSnapshot || {}),
+                });
             } catch (error) {
                 if (error.message === "Join-request-already-resolved") {
                     return callback?.({

@@ -4,6 +4,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { socket } from "../socket/socket.js";
 import YouTubePlayer from "../components/YouTubePlayer.jsx";
 import RoomChat from "../components/RoomChat.jsx";
+import ParticipantNotifications from "../components/ParticipantNotifications.jsx";
 import Button from "../components/ui/Button.jsx";
 
 const SYNC_INTERVAL_MS = 2500;
@@ -41,12 +42,15 @@ export default function RoomPage() {
     const [hostActionPending, setHostActionPending] = useState(false);
     const [hostActionError, setHostActionError] = useState("");
     const [meetingEnded, setMeetingEnded] = useState(false);
+    const [meetingLeft, setMeetingLeft] = useState(false);
     const [activeSidebarTab, setActiveSidebarTab] = useState("people");
     const [chatMessages, setChatMessages] = useState([]);
     const [chatHistoryLoading, setChatHistoryLoading] = useState(false);
     const [chatHistoryError, setChatHistoryError] = useState("");
     const [chatSendError, setChatSendError] = useState("");
     const [unreadMessageCount, setUnreadMessageCount] = useState(0);
+    const [participantNotifications, setParticipantNotifications] = useState([]);
+    const participantNotificationTimersRef = useRef(new Map());
     const userId = sessionStorage.getItem("userId");
     const sessionToken = sessionStorage.getItem("sessionToken");
     const pendingRequestId = sessionStorage.getItem("pendingJoinRequestId");
@@ -60,11 +64,89 @@ export default function RoomPage() {
     const playbackAnchorRef = useRef(null);
     const pausedRestoreRef = useRef(null);
     const isSeekingRef = useRef(false);
-    const participants = [...(room?.participants || [])].sort((first, second) => {
+    const seenParticipantNotificationIdsRef = useRef(new Set());
+    const participantListVersionRef = useRef(-1);
+    const latestParticipantSnapshotRef = useRef(null);
+    const uniqueParticipants = new Map(
+        (room?.participants || [])
+            .filter((person) => typeof person?.userId === "string" && person.userId)
+            .map((person) => [person.userId, person])
+    );
+    const participants = [...uniqueParticipants.values()].sort((first, second) => {
         const firstIsHost = first.role === "Host" || first.userId === room?.hostId;
         const secondIsHost = second.role === "Host" || second.userId === room?.hostId;
         return Number(secondIsHost) - Number(firstIsHost);
     });
+    const receiveParticipantNotification = useCallback((notification) => {
+        if (
+            !notification?.id ||
+            typeof notification.username !== "string" ||
+            !["joined", "left"].includes(notification.action)
+        ) {
+            return;
+        }
+        const seenIds = seenParticipantNotificationIdsRef.current;
+        if (seenIds.has(notification.id)) return;
+        seenIds.add(notification.id);
+        if (seenIds.size > 200) {
+            seenIds.clear();
+            seenIds.add(notification.id);
+        }
+        const timer = window.setTimeout(() => {
+            participantNotificationTimersRef.current.delete(notification.id);
+            setParticipantNotifications((current) =>
+                current.filter((item) => item.id !== notification.id)
+            );
+        }, 2750);
+        participantNotificationTimersRef.current.set(notification.id, timer);
+        setParticipantNotifications((current) => [...current, notification]);
+    }, []);
+
+    const applyParticipantSnapshot = useCallback((data) => {
+        if (!Array.isArray(data?.participants)) return;
+        if (
+            Number.isInteger(data.participantsVersion) &&
+            data.participantsVersion < participantListVersionRef.current
+        ) {
+            return;
+        }
+
+        if (Number.isInteger(data.participantsVersion)) {
+            participantListVersionRef.current = data.participantsVersion;
+        }
+        const snapshot = {
+            participants: data.participants,
+            ...(data.hostId ? { hostId: data.hostId } : {}),
+            participantsVersion: data.participantsVersion,
+        };
+        latestParticipantSnapshotRef.current = snapshot;
+
+        if (!data.participants.some((participant) => participant.userId === userId)) {
+            sessionStorage.removeItem("userId");
+            sessionStorage.removeItem("sessionToken");
+            socket.disconnect();
+            navigate("/");
+            return;
+        }
+        setRoom((previousRoom) => ({
+            ...(previousRoom || {}),
+            ...snapshot,
+        }));
+    }, [navigate, userId]);
+
+    useEffect(() => () => {
+        for (const timer of participantNotificationTimersRef.current.values()) {
+            window.clearTimeout(timer);
+        }
+        participantNotificationTimersRef.current.clear();
+    }, []);
+
+    useEffect(() => {
+        if (!meetingEnded && !meetingLeft) return undefined;
+        const redirectTimer = window.setTimeout(() => navigate("/"), 2500);
+        return () => window.clearTimeout(redirectTimer);
+    }, [meetingEnded, meetingLeft, navigate]);
+
     const canControlVideo = room?.participants?.some(
         (person) => person.userId === userId && ["Host", "Moderator"].includes(person.role)
     );
@@ -238,7 +320,6 @@ export default function RoomPage() {
     useEffect(() => {
         let cancelled = false;
         let cleanupSocket;
-        let endedNavigationTimer;
         socketJoinedRef.current = false;
         pendingRoomStateRef.current = null;
         playbackAnchorRef.current = null;
@@ -266,7 +347,6 @@ export default function RoomPage() {
                 playerRef.current.pauseVideo();
             }
             socket.disconnect();
-            endedNavigationTimer = window.setTimeout(() => navigate("/"), 1800);
         };
 
         const acceptJoinRequest = (approvedUserId) => {
@@ -373,9 +453,15 @@ export default function RoomPage() {
 
                         socketJoinedRef.current = true;
                         const joinedRoom = socketResult.room;
+                        applyParticipantSnapshot(joinedRoom);
                         setRoom((currentRoom) => ({
                             ...(currentRoom || {}),
                             ...joinedRoom,
+                            ...(latestParticipantSnapshotRef.current &&
+                                latestParticipantSnapshotRef.current.participantsVersion >=
+                                    (joinedRoom.participantsVersion ?? -1)
+                                ? latestParticipantSnapshotRef.current
+                                : {}),
                             video: joinedRoom.video,
                         }));
                         setJoinRequests(joinedRoom.pendingJoinRequests || []);
@@ -404,23 +490,14 @@ export default function RoomPage() {
                 };
 
                 const onParticipantsUpdated = (data) => {
-                    if (!cancelled && data?.participants) {
-                        if (!data.participants.some((participant) => participant.userId === userId)) {
-                            sessionStorage.removeItem("userId");
-                            sessionStorage.removeItem("sessionToken");
-                            socket.disconnect();
-                            navigate("/");
-                            return;
-                        }
-                        setRoom((previousRoom) =>
-                            previousRoom
-                                ? {
-                                    ...previousRoom,
-                                    participants: data.participants,
-                                    ...(data.hostId ? { hostId: data.hostId } : {}),
-                                }
-                                : previousRoom
-                        );
+                    if (!cancelled) applyParticipantSnapshot(data);
+                };
+                const onParticipantNotification = (data) => {
+                    if (
+                        !cancelled &&
+                        data?.roomCode === roomCode?.toUpperCase()
+                    ) {
+                        receiveParticipantNotification(data);
                     }
                 };
                 const onJoinRequestsUpdated = (data) => {
@@ -437,8 +514,8 @@ export default function RoomPage() {
                 };
                 const onHostLeft = () => {
                     clearRoomCredentials();
+                    setMeetingLeft(true);
                     socket.disconnect();
-                    navigate("/");
                 };
 
                 const onVideoState = (data) => {
@@ -500,6 +577,7 @@ export default function RoomPage() {
                 };
 
                 socket.on("room:participants-updated", onParticipantsUpdated);
+                socket.on("room:participant-notification", onParticipantNotification);
                 socket.on("room:join-requests-updated", onJoinRequestsUpdated);
                 socket.on("room:removed", onRoomRemoved);
                 socket.on("room:host:left", onHostLeft);
@@ -515,6 +593,7 @@ export default function RoomPage() {
                 socket.on("chat:message:new", onChatMessage);
                 cleanupSocket = () => {
                     socket.off("room:participants-updated", onParticipantsUpdated);
+                    socket.off("room:participant-notification", onParticipantNotification);
                     socket.off("room:join-requests-updated", onJoinRequestsUpdated);
                     socket.off("room:removed", onRoomRemoved);
                     socket.off("room:host:left", onHostLeft);
@@ -549,11 +628,11 @@ export default function RoomPage() {
         joinRoom();
         return () => {
             cancelled = true;
-            if (endedNavigationTimer) window.clearTimeout(endedNavigationTimer);
             cleanupSocket?.();
         };
     }, [
         applyRoomVideoState,
+        applyParticipantSnapshot,
         loadChatHistory,
         mergeChatMessages,
         navigate,
@@ -561,13 +640,14 @@ export default function RoomPage() {
         pendingRequestToken,
         pendingUserId,
         roomCode,
+        receiveParticipantNotification,
         sessionToken,
         sessionVersion,
         userId,
     ]);
 
     useEffect(() => {
-        if (meetingEnded) return undefined;
+        if (meetingEnded || meetingLeft) return undefined;
         const interval = setInterval(() => {
             const player = playerRef.current;
             if (!playerReadyRef.current || !player) return;
@@ -591,7 +671,7 @@ export default function RoomPage() {
         }, 500);
 
         return () => clearInterval(interval);
-    }, [meetingEnded]);
+    }, [meetingEnded, meetingLeft]);
 
     useEffect(() => {
         if (meetingEnded) return undefined;
@@ -702,13 +782,7 @@ export default function RoomPage() {
                 return;
             }
 
-            if (result.participants) {
-                setRoom((previousRoom) =>
-                    previousRoom
-                        ? { ...previousRoom, participants: result.participants }
-                        : previousRoom
-                );
-            }
+            if (Array.isArray(result.participants)) applyParticipantSnapshot(result);
         });
     };
 
@@ -733,13 +807,7 @@ export default function RoomPage() {
                     previous.filter((request) => request.requestId !== requestId)
                 );
             }
-            if (Array.isArray(result.participants)) {
-                setRoom((previousRoom) =>
-                    previousRoom
-                        ? { ...previousRoom, participants: result.participants }
-                        : previousRoom
-                );
-            }
+            if (Array.isArray(result.participants)) applyParticipantSnapshot(result);
         });
     };
 
@@ -811,12 +879,23 @@ export default function RoomPage() {
                     "pendingJoinUserId",
                 ].forEach((key) => sessionStorage.removeItem(key));
                 socket.disconnect();
-                navigate("/");
+                setMeetingLeft(true);
             });
             return;
         }
-        socket.disconnect();
-        navigate("/");
+        if (!socketJoinedRef.current) {
+            socket.disconnect();
+            navigate("/");
+            return;
+        }
+        socket.emit("room:leave", { roomCode, userId }, (result) => {
+            if (!result?.success) {
+                setError(result?.message || "Unable to leave the room cleanly");
+                return;
+            }
+            socket.disconnect();
+            setMeetingLeft(true);
+        });
     };
 
     const endMeeting = () => {
@@ -846,6 +925,19 @@ export default function RoomPage() {
                     <h1 className="text-xl font-semibold">Meeting ended</h1>
                     <p className="mt-3 text-sm leading-6 text-[#4B5563]" role="status">
                         {error || "The Host has ended this meeting. Returning home…"}
+                    </p>
+                </section>
+            </main>
+        );
+    }
+
+    if (meetingLeft) {
+        return (
+            <main className="flex h-dvh items-center justify-center bg-[#DEDEDE] px-4 text-[#1F2937]">
+                <section className="w-full max-w-md rounded-xl border border-[#D1D5DB] bg-white p-6 text-center shadow-sm">
+                    <h1 className="text-xl font-semibold">You left the meeting</h1>
+                    <p className="mt-3 text-sm leading-6 text-[#4B5563]" role="status">
+                        You have left the room. Returning home…
                     </p>
                 </section>
             </main>
@@ -883,7 +975,12 @@ export default function RoomPage() {
     }
 
     return (
-        <main className="flex min-h-dvh flex-col bg-[#DEDEDE] text-[#1F2937] lg:h-dvh lg:overflow-hidden">
+        <main className="flex min-h-dvh flex-col bg-[#DEDEDE] text-[#1F2937] xl:h-dvh xl:overflow-hidden">
+            <ParticipantNotifications
+                notifications={participantNotifications.filter(
+                    (notification) => notification.roomCode === roomCode?.toUpperCase()
+                )}
+            />
             <header className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-[#D1D5DB] px-4 py-3 sm:gap-4 sm:px-8">
                 <div>
                     <h1 className="text-lg font-semibold">Watch party</h1>
@@ -897,12 +994,9 @@ export default function RoomPage() {
                 </div>
             </header>
 
-            <div className="mx-auto grid w-full max-w-[1500px] flex-1 grid-cols-1 gap-3 overflow-visible p-3 sm:gap-5 sm:p-6 lg:min-h-0 lg:grid-cols-[minmax(0,1fr)_320px] lg:grid-rows-1 lg:overflow-hidden lg:p-8">
+            <div className="mx-auto grid w-full max-w-[1500px] flex-1 grid-cols-1 gap-3 overflow-visible p-3 sm:gap-4 sm:p-5 lg:gap-5 lg:p-6 xl:min-h-0 xl:grid-cols-[minmax(0,1fr)_320px] xl:grid-rows-1 xl:overflow-hidden xl:p-8">
                 <section className="flex min-h-0 min-w-0 flex-col">
-                    <div
-                        className="relative mx-auto w-full shrink-0 overflow-hidden rounded-xl bg-white lg:mx-0"
-                        style={{ maxWidth: "min(100%, calc(42dvh * 16 / 9))" }}
-                    >
+                    <div className="relative mx-auto aspect-video w-full shrink-0 overflow-hidden rounded-xl bg-white xl:mx-0 xl:aspect-auto xl:h-[42dvh]">
                         {isValidVideoId(room?.video?.videoId) ? (
                             <>
                                 <YouTubePlayer
@@ -930,7 +1024,7 @@ export default function RoomPage() {
                                 />
                             </>
                         ) : (
-                            <div className="grid aspect-video w-full place-items-center px-6 text-center">
+                            <div className="grid h-full w-full place-items-center px-6 text-center">
                                 <p className="max-w-sm text-sm leading-6 text-[#4B5563] sm:text-base">
                                     No video selected. The Host can paste a YouTube link to start watching.
                                 </p>
@@ -1057,7 +1151,7 @@ export default function RoomPage() {
                     </div>
                 </section>
 
-                <aside className="flex min-h-[360px] max-h-[65dvh] min-w-0 flex-col overflow-hidden rounded-xl border border-[#D1D5DB] bg-white p-3 shadow-sm sm:p-5 lg:min-h-0 lg:max-h-none">
+                <aside className="flex min-h-[360px] max-h-[65dvh] min-w-0 flex-col overflow-hidden rounded-xl border border-[#D1D5DB] bg-white p-3 shadow-sm sm:p-4 lg:p-5 xl:min-h-0 xl:max-h-none">
                     <div className="mb-3 grid shrink-0 grid-cols-2 rounded-lg bg-[#F3F4F6] p-1" role="tablist" aria-label="Room sidebar">
                         <Button
                             variant={activeSidebarTab === "people" ? "primary" : "ghost"}
@@ -1151,7 +1245,10 @@ export default function RoomPage() {
                             {participants.length}
                         </span>
                     </div>
-                    <div className="min-h-0 flex-1 divide-y divide-[#E5E7EB] overflow-y-auto">
+                    <div
+                        className="min-h-0 flex-1 divide-y divide-[#E5E7EB] overflow-y-auto overscroll-contain"
+                        aria-label="Room participants"
+                    >
                         {participants.map((person) => {
                             const isHost = person.role === "Host" || person.userId === room?.hostId;
                             return (
@@ -1249,7 +1346,7 @@ export default function RoomPage() {
                                 {hostActionPending ? "Please wait…" : "End Meeting for Everyone"}
                             </Button>
                         )}
-                        <div className="flex gap-2 lg:block">
+                        <div className="flex gap-2 xl:block">
                             <Button
                                 variant="outline"
                                 size="md"
@@ -1266,7 +1363,7 @@ export default function RoomPage() {
                                 onClick={leaveMeeting}
                                 disabled={hostActionPending}
                                 loading={hostActionPending}
-                                className="w-full rounded-lg bg-[#003399] px-3 py-2 text-xs font-medium text-white transition hover:bg-[#002570] disabled:bg-[#9CA3AF] sm:py-2.5 sm:text-sm lg:mt-2"
+                                className="w-full rounded-lg bg-[#003399] px-3 py-2 text-xs font-medium text-white transition hover:bg-[#002570] disabled:bg-[#9CA3AF] sm:py-2.5 sm:text-sm xl:mt-2"
                             >
                                 {hostActionPending ? "Leaving…" : "Leave meeting"}
                             </Button>

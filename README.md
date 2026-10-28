@@ -123,6 +123,8 @@ The application uses a client-server architecture with REST APIs for room-relate
 6. Each connected client updates its YouTube player accordingly.
 7. Playback-state restoration and periodic drift correction help keep participants synchronized.
 
+Participant presence is tracked from active room sockets and deduplicated by user ID. The server broadcasts the authoritative list through `room:participants-updated` after joins and departures, including explicit `room:leave` events and unexpected disconnects. Brief disconnects have a short reconnection grace period. The server sends room-scoped `room:participant-notification` events for completed joins and departures. MongoDB retains room membership and role data independently of the live list.
+
 ### How Chat Works
 
 1. A participant submits a chat message.

@@ -184,8 +184,8 @@ const YouTubePlayer = forwardRef(function YouTubePlayer(
     }, []);
 
     return (
-        <div>
-            <div className="aspect-video w-full">
+        <div className="h-full w-full">
+            <div className="h-full w-full">
                 <div ref={containerRef} className="h-full w-full" />
             </div>
 

@@ -18,6 +18,8 @@ export const authorizeRoomSocket = async ({
   if (
     !/^[A-Z0-9]{8}$/.test(roomCode) ||
     !session ||
+    !session.isRoomMember ||
+    session.isDisconnected ||
     session.userId !== data.userId ||
     session.roomCode !== roomCode
   ) {
