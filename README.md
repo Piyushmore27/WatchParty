@@ -4,8 +4,8 @@ A real-time YouTube Watch Party application that allows multiple users to watch 
 
 ## 🌐 Live Demo
 
-- **Frontend:** To be added after deployment
-- **Backend API:** To be added after deployment
+- **Frontend:** https://watch-party-wheat-tau.vercel.app/
+- **Backend API:** https://watchparty-ftpo.onrender.com
 
 > Replace these placeholders with your deployed URLs before submitting the project.
 
@@ -180,11 +180,9 @@ Install the following before running the application:
 ### 1. Clone the Repository
 
 ```bash
-git clone YOUR_GITHUB_REPOSITORY_URL
+git clone https://github.com/Piyushmore27/WatchParty.git
 cd Watch-Party
 ```
-
-Replace `YOUR_GITHUB_REPOSITORY_URL` with your actual GitHub repository URL.
 
 ### 2. Configure the Backend
 
@@ -286,7 +284,7 @@ Deploy the Vite application to a static hosting provider such as Vercel.
 Configure:
 
 ```env
-VITE_API_URL=YOUR_DEPLOYED_BACKEND_URL
+VITE_API_URL=https://watchparty-ftpo.onrender.com
 ```
 
 ### Backend
